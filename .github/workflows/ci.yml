@@ -1,0 +1,64 @@
+name: pretext-wasm CI/CD Pipeline
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+
+jobs:
+  rust-checks:
+    name: Rust Static & Integration Tests
+    runs-on: ubuntu-latest
+    
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Install Rust Toolchain
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          components: clippy, rustfmt
+
+      - name: Cache dependencies
+        uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: pretext-wasm -> target
+
+      - name: Run clippy checks (Phase 3)
+        working-directory: pretext-wasm
+        run: cargo clippy --all-targets --all-features -- -D warnings
+
+      - name: Run unit & integration fuzz tests (Phase 1 & 2)
+        working-directory: pretext-wasm
+        run: cargo test --release
+
+  wasm-build-and-matrix:
+    name: WASM Matrix Test (Node.js)
+    needs: rust-checks
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        node-version: [18.x, 20.x, 22.x]
+
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Use Node.js ${{ matrix.node-version }}
+        uses: actions/setup-node@v3
+        with:
+          node-version: ${{ matrix.node-version }}
+
+      - name: Install wasm-pack
+        run: curl https://rustwasm.github.io/wasm-pack/installer/init.sh -sSf | sh
+
+      - name: Build WebAssembly (Node target)
+        working-directory: pretext-wasm
+        run: wasm-pack build --target nodejs
+
+      - name: Download test font
+        working-directory: pretext-wasm
+        run: curl -sL "https://fonts.gstatic.com/s/roboto/v30/KFOmCnqEu92Fr1Me5WZLCzYlKw.ttf" -o Roboto-Regular.ttf
+
+      - name: Run Node.js E2E Tests (Phase 4 Validation)
+        working-directory: pretext-wasm
+        run: node demo.cjs

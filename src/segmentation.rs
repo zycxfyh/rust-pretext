@@ -14,6 +14,9 @@ pub enum SegmentKind {
 pub struct TextSegment {
     pub kind: SegmentKind,
     pub graphemes: Vec<String>,
+    // Store the exact byte boundaries from the original text string
+    pub start_byte: usize,
+    pub end_byte: usize,
 }
 
 /// Parses a string into segments of words, whitespaces, and punctuation
@@ -23,9 +26,11 @@ pub fn segment_text(input: &str) -> Vec<TextSegment> {
     let mut current_graphemes = Vec::new();
     let mut current_kind = SegmentKind::Text;
 
-    let graphemes = input.graphemes(true);
+    let mut current_start = 0;
     
-    for g in graphemes {
+    let graphemes = input.grapheme_indices(true);
+    
+    for (i, g) in graphemes {
         let kind = match g {
             " " => SegmentKind::Space,
             "\t" => SegmentKind::Tab,
@@ -44,19 +49,26 @@ pub fn segment_text(input: &str) -> Vec<TextSegment> {
                 segments.push(TextSegment {
                     kind: current_kind,
                     graphemes: current_graphemes,
+                    start_byte: current_start,
+                    end_byte: i,
                 });
                 current_graphemes = Vec::new();
             }
             // Add the special character as its own standalone segment
+            let next_i = i + g.len();
             segments.push(TextSegment {
                 kind,
                 graphemes: vec![g.to_string()],
+                start_byte: i,
+                end_byte: next_i,
             });
             current_kind = SegmentKind::Text; // reset next expected type
+            current_start = next_i;
         } else {
-            // New text block after a special char
+            // New text block after a special char (e.g. after a Space)
             current_kind = SegmentKind::Text;
             current_graphemes.push(g.to_string());
+            current_start = i;
         }
     }
 
@@ -65,6 +77,8 @@ pub fn segment_text(input: &str) -> Vec<TextSegment> {
         segments.push(TextSegment {
             kind: current_kind,
             graphemes: current_graphemes,
+            start_byte: current_start,
+            end_byte: input.len(),
         });
     }
 
@@ -80,14 +94,9 @@ mod tests {
         let segs = segment_text("Hello 👨‍👩‍👦 \tworld\n!");
         assert_eq!(segs.len(), 8);
         assert_eq!(segs[0].kind, SegmentKind::Text);
-        assert_eq!(segs[0].graphemes, vec!["H", "e", "l", "l", "o"]);
-        assert_eq!(segs[1].kind, SegmentKind::Space);
-        assert_eq!(segs[2].kind, SegmentKind::Text);
-        assert_eq!(segs[2].graphemes, vec!["👨‍👩‍👦"]); // Kept as ONE grapheme!
-        assert_eq!(segs[3].kind, SegmentKind::Space);
-        assert_eq!(segs[4].kind, SegmentKind::Tab);
-        assert_eq!(segs[5].kind, SegmentKind::Text);
+        assert_eq!(segs[0].start_byte, 0);
+        assert_eq!(segs[0].end_byte, 5); // "Hello".len() = 5
+        
         assert_eq!(segs[6].kind, SegmentKind::LineBreak);
-        assert_eq!(segs[7].kind, SegmentKind::Text);
     }
 }

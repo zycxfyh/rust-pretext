@@ -1,5 +1,6 @@
 pub mod segmentation;
 pub mod bidi;
+pub mod layout;
 
 use wasm_bindgen::prelude::*;
 

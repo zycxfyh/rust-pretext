@@ -1,5 +1,4 @@
 use unicode_bidi::{BidiInfo, Level};
-use wasm_bindgen::prelude::*;
 
 #[derive(Debug)]
 pub struct BidiRun {
@@ -69,7 +68,7 @@ mod tests {
         let text = "english123عربى";
         let runs = resolve_bidi(text);
         assert!(runs.len() > 1); // Because it contains both LTR and RTL
-        assert_eq!(runs[0].is_rtl, false); // "english123" is LTR
-        assert_eq!(runs[1].is_rtl, true);  // "عربى" is RTL
+        assert!(!runs[0].is_rtl); // "english123" is LTR
+        assert!(runs[1].is_rtl);  // "عربى" is RTL
     }
 }

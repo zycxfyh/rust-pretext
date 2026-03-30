@@ -1,1 +1,0 @@
-/home/xizihan/pretext/pretext-wasm/target/wasm32-unknown-unknown/release/pretext_wasm.wasm: /home/xizihan/pretext/pretext-wasm/src/bidi.rs /home/xizihan/pretext/pretext-wasm/src/lib.rs /home/xizihan/pretext/pretext-wasm/src/segmentation.rs
