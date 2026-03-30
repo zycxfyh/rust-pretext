@@ -21,15 +21,11 @@ jobs:
 
       - name: Cache dependencies
         uses: Swatinem/rust-cache@v2
-        with:
-          workspaces: pretext-wasm -> target
 
       - name: Run clippy checks (Phase 3)
-        working-directory: pretext-wasm
         run: cargo clippy --all-targets --all-features -- -D warnings
 
       - name: Run unit & integration fuzz tests (Phase 1 & 2)
-        working-directory: pretext-wasm
         run: cargo test --release
 
   wasm-build-and-matrix:
@@ -52,13 +48,10 @@ jobs:
         run: curl https://rustwasm.github.io/wasm-pack/installer/init.sh -sSf | sh
 
       - name: Build WebAssembly (Node target)
-        working-directory: pretext-wasm
         run: wasm-pack build --target nodejs
 
       - name: Download test font
-        working-directory: pretext-wasm
         run: curl -sL "https://fonts.gstatic.com/s/roboto/v30/KFOmCnqEu92Fr1Me5WZLCzYlKw.ttf" -o Roboto-Regular.ttf
 
       - name: Run Node.js E2E Tests (Phase 4 Validation)
-        working-directory: pretext-wasm
         run: node demo.cjs
